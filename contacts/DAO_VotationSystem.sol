@@ -1,64 +1,102 @@
 // SPDX-License-Identifier: Unlicenced
 pragma solidity 0.8.30;
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract DAOVotationSystem {
-
+    // --- Owner manual ---
     address public owner;
-    event NewProposal(address creator, string description);
-    event Vote(address voter, uint proposalId, bool positive, uint256 weight);
+    modifier onlyOwner(){ require(msg.sender == owner, "not owner"); _; }
+    constructor(){ owner = msg.sender; }
 
-    uint proposalCount;
+    // --- Eventos ---
+    event NewProposal(uint indexed id, address indexed creator, string description, uint256 deadline);
+    event Vote(address indexed voter, uint indexed proposalId, bool positive, uint256 weight);
+    event Closed(uint indexed proposalId, bool passed, uint256 positiveVotesWeight, uint256 negativeVotesWeight);
+
+    uint256 public proposalCount;
+
     struct Proposal {
         uint id;
         address creator;
-        string desciption;
-        uint256 positiveVotes;
-        uint256 positiveVotesWeight;
+        string description;              // (fix de 'desciption')
+        uint256 positiveVotes;           // no ponderado
+        uint256 positiveVotesWeight;     // ponderado
         uint256 negativeVotes;
         uint256 negativeVotesWeight;
         bool isActive;
-        uint256 deadline;
+        uint256 deadline;                // timestamp límite
     }
-    mapping(uint => Proposal) public proposals; //mapeado de propuestas
-    mapping(uint => mapping(address => bool)) public hasVoted; //mapeado para comprobar si se ha votado en esta propuesta
-    mapping(address => uint256) public voteWeight; //mapeado de peso de voto de cada votante
 
-    // Asignar peso a un usuario (solo owner)
-    function _setVoteWeight(address _voter, uint256 _weight) external {
+    mapping(uint => Proposal) public proposals;                 // getter público
+    mapping(uint => mapping(address => bool)) public hasVoted;  // (propuesta -> votante -> ya votó)
+    mapping(address => uint256) public voteWeight;              // peso por votante
+
+    // --------- ADMIN ---------
+    function _setVoteWeight(address _voter, uint256 _weight) external onlyOwner {
         voteWeight[_voter] = _weight;
     }
 
-     // Función para consultar el peso de un usuario
-    function _getVoteWeight(address _voter) external view returns (uint256) {
-        return voteWeight[_voter];
+    /// @notice Crea una propuesta con ventana de voto en segundos
+    /// @param _creator Dirección que se mostrará como creador (puede ser owner)
+    /// @param _description Texto de la propuesta
+    /// @param _durationSeconds Ventana de votación en segundos (p.ej., 120 = 2 min)
+    function _newProposal(address _creator, string memory _description, uint256 _durationSeconds) external onlyOwner {
+        require(bytes(_description).length > 0, "empty description");
+        require(_durationSeconds > 0, "bad duration");
 
+        uint id = proposalCount++;
+        proposals[id] = Proposal({
+            id: id,
+            creator: _creator,
+            description: _description,
+            positiveVotes: 0,
+            positiveVotesWeight: 0,
+            negativeVotes: 0,
+            negativeVotesWeight: 0,
+            isActive: true,
+            deadline: block.timestamp + _durationSeconds
+        });
+
+        emit NewProposal(id, _creator, _description, proposals[id].deadline);
     }
 
-    function _newProposal(address _creator, string memory _description) external {
-        uint256 id = proposalCount++;
-        proposals[id] = Proposal(id, _creator, _description, 0, 0, 0, 0, true, block.timestamp + 10 days);
-        emit NewProposal(_creator, _description);
-    }
-
+    // --------- VOTO (ponderado) ---------
     function vote(uint _proposalId, bool _positive) external {
-        require(proposals[_proposalId].isActive, "Proposal is not active");//comprueba que la propuesta está activa
-        require(block.timestamp < proposals[_proposalId].deadline, "Proposal has expired");//comprueba que el tiempo de la propuesta no ha expirado
-        require(!hasVoted[_proposalId][msg.sender], "You have already voted on this proposal");//Comprueba que el votante ya ha votado la propuesta
-        hasVoted[_proposalId][msg.sender] = true; // indicamos que el votante ya ha votado la propuesta
+        require(_proposalId < proposalCount, "invalid proposal");
+        Proposal storage p = proposals[_proposalId];
+        require(p.isActive, "Proposal is not active");
+        require(block.timestamp < p.deadline, "Proposal has expired");
+        require(!hasVoted[_proposalId][msg.sender], "You have already voted on this proposal");
 
         uint256 weight = voteWeight[msg.sender];
-        require(weight >= 1, "You have not weight to vote");//comprueba que el usuario tiene peso de voto
+        require(weight >= 1, "You have not weight to vote");
+
+        hasVoted[_proposalId][msg.sender] = true;
 
         if (_positive) {
-            proposals[_proposalId].positiveVotes++; //Conteo de veces votad
-            proposals[_proposalId].positiveVotesWeight += weight;
+            unchecked { p.positiveVotes++; }
+            p.positiveVotesWeight += weight;
         } else {
-            proposals[_proposalId].negativeVotes++;
-            proposals[_proposalId].negativeVotesWeight += weight;
+            unchecked { p.negativeVotes++; }
+            p.negativeVotesWeight += weight;
         }
+
         emit Vote(msg.sender, _proposalId, _positive, weight);
+    }
+
+    // --------- CIERRE ---------
+    function closeProposal(uint _proposalId) external onlyOwner {
+        require(_proposalId < proposalCount, "invalid proposal");
+        Proposal storage p = proposals[_proposalId];
+        require(p.isActive, "Already closed");
+        require(block.timestamp >= p.deadline, "Still active");
+        p.isActive = false;
+
+        bool passed = p.positiveVotesWeight > p.negativeVotesWeight;
+        emit Closed(_proposalId, passed, p.positiveVotesWeight, p.negativeVotesWeight);
+    }
+
+    // Hora actual on-chain
+    function nowTs() external view returns (uint256) {
+        return block.timestamp;
     }
 }
