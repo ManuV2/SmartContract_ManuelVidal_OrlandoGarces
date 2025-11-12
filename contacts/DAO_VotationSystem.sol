@@ -10,7 +10,8 @@ contract DAOVotationSystem {
     // Eventos
     event NewProposal(uint indexed id, address indexed creator, string description, uint256 deadline);
     event Vote(address indexed voter, uint indexed proposalId, bool positive, uint256 weight);
-    event Closed(uint indexed proposalId, bool passed, uint256 positiveVotesWeight, uint256 negativeVotesWeight);
+    event Closed(uint indexed proposalId, bool passed, uint256 positiveVotesWeight, uint256 negativeVotesWeight, string description);
+    event ProposalDocumentAdded(uint indexed proposalId, string cid);
 
     uint256 public proposalCount;
 
@@ -29,6 +30,7 @@ contract DAOVotationSystem {
     mapping(uint => Proposal) public proposals;                 // getter público
     mapping(uint => mapping(address => bool)) public hasVoted;  // (propuesta -> votante -> ya votó)
     mapping(address => uint256) public voteWeight;              // peso por votante
+    mapping(uint => string) public proposalDocuments;           // CID del documento final IPFS
 
     // Admin
     function _setVoteWeight(address _voter, uint256 _weight) external onlyOwner {
@@ -88,7 +90,17 @@ contract DAOVotationSystem {
         p.isActive = false;
 
         bool passed = p.positiveVotesWeight > p.negativeVotesWeight;
-        emit Closed(_proposalId, passed, p.positiveVotesWeight, p.negativeVotesWeight);
+        emit Closed(_proposalId, passed, p.positiveVotesWeight, p.negativeVotesWeight,p.description);
+    }
+
+    function setProposalDocument(uint _proposalId, string memory _cid) external onlyOwner {
+        require(_proposalId < proposalCount, "invalid proposal");
+        Proposal storage p = proposals[_proposalId];
+        require(!p.isActive, "Proposal still active");
+        require(bytes(_cid).length > 0, "empty CID");
+
+        proposalDocuments[_proposalId] = _cid;
+        emit ProposalDocumentAdded(_proposalId, _cid);
     }
 
     // Hora actual on-chain

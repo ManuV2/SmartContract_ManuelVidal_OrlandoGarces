@@ -36,6 +36,12 @@
 						"internalType": "uint256",
 						"name": "negativeVotesWeight",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "description",
+						"type": "string"
 					}
 				],
 				"name": "Closed",
@@ -70,6 +76,25 @@
 					}
 				],
 				"name": "NewProposal",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "proposalId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "cid",
+						"type": "string"
+					}
+				],
+				"name": "ProposalDocumentAdded",
 				"type": "event"
 			},
 			{
@@ -228,6 +253,25 @@
 						"type": "uint256"
 					}
 				],
+				"name": "proposalDocuments",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "",
+						"type": "string"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
 				"name": "proposals",
 				"outputs": [
 					{
@@ -287,6 +331,24 @@
 						"type": "uint256"
 					},
 					{
+						"internalType": "string",
+						"name": "_cid",
+						"type": "string"
+					}
+				],
+				"name": "setProposalDocument",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_proposalId",
+						"type": "uint256"
+					},
+					{
 						"internalType": "bool",
 						"name": "_positive",
 						"type": "bool"
@@ -319,24 +381,12 @@
 		],
 		"devdoc": {
 			"kind": "dev",
-			"methods": {
-				"_newProposal(address,string,uint256)": {
-					"params": {
-						"_creator": "Dirección que se mostrará como creador (puede ser owner)",
-						"_description": "Texto de la propuesta",
-						"_durationSeconds": "Ventana de votación en segundos (p.ej., 120 = 2 min)"
-					}
-				}
-			},
+			"methods": {},
 			"version": 1
 		},
 		"userdoc": {
 			"kind": "user",
-			"methods": {
-				"_newProposal(address,string,uint256)": {
-					"notice": "Crea una propuesta con ventana de voto en segundos"
-				}
-			},
+			"methods": {},
 			"version": 1
 		}
 	},
@@ -344,7 +394,7 @@
 		"compilationTarget": {
 			"contacts/DAO_VotationSystem.sol": "DAOVotationSystem"
 		},
-		"evmVersion": "london",
+		"evmVersion": "prague",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -357,11 +407,11 @@
 	},
 	"sources": {
 		"contacts/DAO_VotationSystem.sol": {
-			"keccak256": "0x17f3b1c466d69df8cb3382b4041288abb6a9bb3cb13f0f1a705e4f7d57179033",
+			"keccak256": "0xd297c9e1e5c1a5f2dd6d7b114762e2e499b9733f062e22d1f462fb901589d530",
 			"license": "Unlicenced",
 			"urls": [
-				"bzz-raw://870fc5252c41db8940caefada934d496976510f39d7adc874ed7bf9edbfb1823",
-				"dweb:/ipfs/QmQL35v2bjMtJKsFZfFK2rNT772Ebw6tZkDrbWNSYEpnL4"
+				"bzz-raw://86a05b7bbdab43a630d5c8cb4e6c3c91c478f245d4e2a926043b64ed6c1e8727",
+				"dweb:/ipfs/QmWfcXPt4aLk9DpKSz7hKNWma5iVbF2J3PccGux867LCdN"
 			]
 		}
 	},
