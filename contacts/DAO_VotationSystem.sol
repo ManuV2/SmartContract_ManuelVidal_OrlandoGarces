@@ -2,22 +2,23 @@
 pragma solidity 0.8.30;
 
 contract DAOVotationSystem {
-    // --- Owner manual ---
+   
     address public owner;
     modifier onlyOwner(){ require(msg.sender == owner, "not owner"); _; }
     constructor(){ owner = msg.sender; }
 
-    // --- Eventos ---
+    // Eventos
     event NewProposal(uint indexed id, address indexed creator, string description, uint256 deadline);
     event Vote(address indexed voter, uint indexed proposalId, bool positive, uint256 weight);
-    event Closed(uint indexed proposalId, bool passed, uint256 positiveVotesWeight, uint256 negativeVotesWeight);
+    event Closed(uint indexed proposalId, bool passed, uint256 positiveVotesWeight, uint256 negativeVotesWeight, string description);
+    event ProposalDocumentAdded(uint indexed proposalId, string cid);
 
     uint256 public proposalCount;
 
     struct Proposal {
         uint id;
         address creator;
-        string description;              // (fix de 'desciption')
+        string description;              
         uint256 positiveVotes;           // no ponderado
         uint256 positiveVotesWeight;     // ponderado
         uint256 negativeVotes;
@@ -29,16 +30,13 @@ contract DAOVotationSystem {
     mapping(uint => Proposal) public proposals;                 // getter público
     mapping(uint => mapping(address => bool)) public hasVoted;  // (propuesta -> votante -> ya votó)
     mapping(address => uint256) public voteWeight;              // peso por votante
+    mapping(uint => string) public proposalDocuments;           // CID del documento final IPFS
 
-    // --------- ADMIN ---------
+    // Admin
     function _setVoteWeight(address _voter, uint256 _weight) external onlyOwner {
         voteWeight[_voter] = _weight;
     }
-
-    /// @notice Crea una propuesta con ventana de voto en segundos
-    /// @param _creator Dirección que se mostrará como creador (puede ser owner)
-    /// @param _description Texto de la propuesta
-    /// @param _durationSeconds Ventana de votación en segundos (p.ej., 120 = 2 min)
+    
     function _newProposal(address _creator, string memory _description, uint256 _durationSeconds) external onlyOwner {
         require(bytes(_description).length > 0, "empty description");
         require(_durationSeconds > 0, "bad duration");
@@ -59,7 +57,7 @@ contract DAOVotationSystem {
         emit NewProposal(id, _creator, _description, proposals[id].deadline);
     }
 
-    // --------- VOTO (ponderado) ---------
+    // Voto ponderado
     function vote(uint _proposalId, bool _positive) external {
         require(_proposalId < proposalCount, "invalid proposal");
         Proposal storage p = proposals[_proposalId];
@@ -83,7 +81,7 @@ contract DAOVotationSystem {
         emit Vote(msg.sender, _proposalId, _positive, weight);
     }
 
-    // --------- CIERRE ---------
+    // Cierre
     function closeProposal(uint _proposalId) external onlyOwner {
         require(_proposalId < proposalCount, "invalid proposal");
         Proposal storage p = proposals[_proposalId];
@@ -92,7 +90,17 @@ contract DAOVotationSystem {
         p.isActive = false;
 
         bool passed = p.positiveVotesWeight > p.negativeVotesWeight;
-        emit Closed(_proposalId, passed, p.positiveVotesWeight, p.negativeVotesWeight);
+        emit Closed(_proposalId, passed, p.positiveVotesWeight, p.negativeVotesWeight,p.description);
+    }
+
+    function setProposalDocument(uint _proposalId, string memory _cid) external onlyOwner {
+        require(_proposalId < proposalCount, "invalid proposal");
+        Proposal storage p = proposals[_proposalId];
+        require(!p.isActive, "Proposal still active");
+        require(bytes(_cid).length > 0, "empty CID");
+
+        proposalDocuments[_proposalId] = _cid;
+        emit ProposalDocumentAdded(_proposalId, _cid);
     }
 
     // Hora actual on-chain
