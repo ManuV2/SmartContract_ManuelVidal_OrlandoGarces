@@ -1,0 +1,19 @@
+
+��{
+  "club": "RC Deportivo de La Coruña",
+  "proposalId": "PROPOSAL_ID_AQUI",
+  "title": "Consulta sobre identidad del club",
+  "question": "¿Desea el socio que se modifique el topónimo del nombre oficial del club?",
+  "date": "2025-12-02",
+  "voting": {
+    "totalVotingPower": "1000000",
+    "for": "860000",
+    "against": "120000",
+    "abstain": "20000",
+    "quorumReached": true,
+    "outcome": "Aprobada"
+  },
+  "summary": "La consulta ha sido aprobada por amplia mayoría, alcanzando el quórum mínimo establecido y obteniendo un 86% de apoyo ponderado.",
+  "notes": "Este documento forma parte del archivo histórico del club y se almacena en IPFS para preservar su integridad y disponibilidad."
+}
+�
