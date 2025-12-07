@@ -49,6 +49,7 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [jsonPreview, setJsonPreview] = useState("");
+  const [actaSummary, setActaSummary] = useState(null);
 
   // --- Estado Ethereum / Governor ---
   const [provider, setProvider] = useState(null);
@@ -200,16 +201,25 @@ function App() {
   // ==================================
   const handleUploadActa = async (e) => {
     e.preventDefault();
+
+    // Reset de estados previos
     setError("");
     setCid("");
     setJsonPreview("");
     setCreatedProposalId("");
     setExecuteMessage("");
     setTxError("");
+    setActaSummary(null);
 
     try {
       if (!proposalId.trim()) {
         throw new Error("Debes indicar el proposalId (del Governor).");
+      }
+
+      if (!provider) {
+        throw new Error(
+          "Proveedor Ethereum no inicializado. Asegúrate de tener MetaMask conectado."
+        );
       }
 
       const options = optionsText
@@ -223,6 +233,47 @@ function App() {
 
       const nowIso = new Date().toISOString();
 
+      // ============================
+      // Leer votos reales del Governor
+      // ============================
+      const governor = new ethers.Contract(
+        GOVERNOR_ADDRESS,
+        governorAbi,
+        provider
+      );
+
+      const proposalIdNum = ethers.BigNumber.from(proposalId);
+
+      let againstVotes = ethers.BigNumber.from(0);
+      let forVotes = ethers.BigNumber.from(0);
+      let abstainVotes = ethers.BigNumber.from(0);
+
+      try {
+        const votes = await governor.proposalVotes(proposalIdNum);
+        // En ethers v5, viene como array.
+        againstVotes = votes.againstVotes ?? votes[0];
+        forVotes = votes.forVotes ?? votes[1];
+        abstainVotes = votes.abstainVotes ?? votes[2];
+      } catch (errVotes) {
+        console.warn(
+          "No se pudieron leer los votos del Governor, se usarán 0 por defecto.",
+          errVotes
+        );
+      }
+
+      const participationWeight = againstVotes.add(forVotes).add(abstainVotes);
+
+      // Ganadora básica: comparamos a favor vs en contra
+      // (asumimos que options[0] = "sí / a favor", options[1] = "no / en contra")
+      let winningIndex = 0;
+      if (againstVotes.gt(forVotes)) {
+        winningIndex = 1;
+      }
+      // Si empatan, dejamos 0.
+
+      // ============================
+      // Construir acta con resultados reales
+      // ============================
       const acta = {
         version: "1.0",
         club_name: "Real Club Deportivo de La Coruña",
@@ -233,17 +284,28 @@ function App() {
         opened_at: nowIso,
         closed_at: nowIso,
         results: {
-          total_weight_supply: "0",
-          votes_weight_option_1: "0",
-          votes_weight_option_2: "0",
-          participation_weight: "0",
-          participation_ratio: 0,
+          // usamos solo los valores que podemos calcular de forma fiable.
+          total_weight_supply: "desconocido",
+          votes_weight_option_1: forVotes.toString(),
+          votes_weight_option_2: againstVotes.toString(),
+          participation_weight: participationWeight.toString(),
+          participation_ratio: 0, // opcional: puedes dejarlo como 0 o calcularlo en el futuro
           quorum_required_fraction: 0.04,
-          quorum_met: false,
-          winning_option_index: 0,
+          quorum_met: false, // igual: puedes mejorarlo si más adelante calculas quórum real
+          winning_option_index: winningIndex,
         },
         notes,
       };
+      setActaSummary({
+        title,
+        question,
+        options,
+        forVotes: forVotes.toString(),
+        againstVotes: againstVotes.toString(),
+        abstainVotes: abstainVotes.toString(),
+        participationWeight: participationWeight.toString(),
+        winningIndex,
+      });
 
       const actaString = JSON.stringify(acta, null, 2);
       setJsonPreview(actaString);
@@ -537,6 +599,7 @@ function App() {
             error={error}
             cid={cid}
             jsonPreview={jsonPreview}
+            actaSummary={actaSummary}
           />
 
           <hr style={{ margin: "1.5rem 0" }} />

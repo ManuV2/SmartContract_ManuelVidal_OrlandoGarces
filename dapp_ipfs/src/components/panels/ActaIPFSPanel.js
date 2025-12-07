@@ -11,6 +11,7 @@ function ActaIPFSPanel({
   error,
   cid,
   jsonPreview,
+  actaSummary,
 }) {
   return (
     <section>
@@ -99,23 +100,74 @@ function ActaIPFSPanel({
         </div>
       )}
 
+      {actaSummary && (
+        <div
+          style={{
+            marginTop: "1.5rem",
+            padding: "0.9rem",
+            backgroundColor: "#f5f7ff",
+            borderRadius: "8px",
+            fontSize: "0.9rem",
+          }}
+        >
+          <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
+            Resumen del acta
+          </h3>
+          <p style={{ margin: "0 0 0.5rem 0" }}>
+            <strong>Título:</strong> {actaSummary.title}
+            <br />
+            <strong>Pregunta:</strong> {actaSummary.question}
+          </p>
+          <p style={{ margin: "0 0 0.5rem 0" }}>
+            <strong>Opción ganadora:</strong>{" "}
+            {actaSummary.options[actaSummary.winningIndex] ||
+              actaSummary.options[0] ||
+              "(sin determinar)"}
+          </p>
+          <p style={{ margin: "0 0 0.25rem 0" }}>
+            <strong>Votos ponderados a favor:</strong> {actaSummary.forVotes}
+            <br />
+            <strong>Votos ponderados en contra:</strong>{" "}
+            {actaSummary.againstVotes}
+            <br />
+            <strong>Abstenciones (peso):</strong> {actaSummary.abstainVotes}
+            <br />
+            <strong>Participación total (peso):</strong>{" "}
+            {actaSummary.participationWeight}
+          </p>
+          <p style={{ margin: 0, fontSize: "0.8rem", color: "#555" }}>
+            Los pesos se obtienen directamente de los votos del contrato
+            Governor en Sepolia.
+          </p>
+        </div>
+      )}
+
       {jsonPreview && (
         <div style={{ marginTop: "1.5rem" }}>
-          <h3 style={{ marginBottom: "0.5rem" }}>
-            Previsualización del JSON de acta
-          </h3>
-          <pre
-            style={{
-              backgroundColor: "#f5f5f5",
-              padding: "0.75rem",
-              maxHeight: "260px",
-              overflowY: "auto",
-              fontSize: "0.85rem",
-              borderRadius: "8px",
-            }}
-          >
-            {jsonPreview}
-          </pre>
+          <details>
+            <summary
+              style={{
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+              }}
+            >
+              Ver JSON técnico del acta (solo auditoría)
+            </summary>
+            <pre
+              style={{
+                marginTop: "0.5rem",
+                backgroundColor: "#f5f5f5",
+                padding: "0.75rem",
+                maxHeight: "260px",
+                overflowY: "auto",
+                fontSize: "0.85rem",
+                borderRadius: "8px",
+              }}
+            >
+              {jsonPreview}
+            </pre>
+          </details>
         </div>
       )}
     </section>
