@@ -3,10 +3,11 @@ pragma solidity ^0.8.19;
 
 import "https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/v4.9.6/contracts/access/Ownable.sol";
 
-/// @title Registro de documentos de resultado de consultas
-/// @notice Asocia cada proposalId de Governor con el CID del documento de resultado en IPFS.
+/// @title Registro de actas de consultas
+/// @notice Asocia cada proposalId del Governor con el CID del acta de resultados almacenada en IPFS.
+
 contract ClubConsultationRegistry is Ownable {
-    // proposalId (Governor) => CID de resultado en IPFS
+    // Relación entre una propuesta del Governor y el acta de resultados en IPFS
     mapping(uint256 => string) private _resultDocCid;
 
     event ResultDocumentSet(uint256 indexed proposalId, string cid);

@@ -15,6 +15,7 @@ const ipfs = createIpfsClient({
 });
 
 // Direcciones reales desplegadas en Sepolia
+// TOKEN_ADDRESS = 0x862D243204D5A210b730d147B760a2e03ED1D06d
 const GOVERNOR_ADDRESS = "0x36161B827D71f34a30D91249208F64D9c3B799e8";
 const REGISTRY_ADDRESS = "0x528B38beD6f33753B43244979a957eF2e165ccB8";
 
@@ -31,7 +32,7 @@ const GOVERNOR_STATES = [
 
 function App() {
   // --- Navegación / pestañas ---
-  const [activeTab, setActiveTab] = useState("council"); // 'council' | 'voting' | 'results'
+  const [activeTab, setActiveTab] = useState("council");
 
   // --- Estado IPFS / JSON (acta) ---
   const [proposalId, setProposalId] = useState("");
@@ -77,7 +78,7 @@ function App() {
         return;
       }
       try {
-        // Forzar Sepolia (0xaa36a7)
+        // Forzar Sepolia
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId: "0xaa36a7" }],
@@ -289,9 +290,9 @@ function App() {
           votes_weight_option_1: forVotes.toString(),
           votes_weight_option_2: againstVotes.toString(),
           participation_weight: participationWeight.toString(),
-          participation_ratio: 0, // opcional: puedes dejarlo como 0 o calcularlo en el futuro
+          participation_ratio: 0, // podemos calcularlo en el futuro
           quorum_required_fraction: 0.04,
-          quorum_met: false, // igual: puedes mejorarlo si más adelante calculas quórum real
+          quorum_met: false, // mejorarlo más adelante calculando quórum real
           winning_option_index: winningIndex,
         },
         notes,
